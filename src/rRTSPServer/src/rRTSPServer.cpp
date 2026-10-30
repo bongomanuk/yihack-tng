@@ -39,7 +39,7 @@
 
 #include "rRTSPServer.h"
 
-extern Boolean g_forceTCP;
+Boolean g_forceTCP = False;
 
 #define RESOLUTION_NONE 0
 #define RESOLUTION_LOW  360

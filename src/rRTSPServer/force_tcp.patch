@@ -4,7 +4,7 @@
  #include "Base64.hh"
  #include <GroupsockHelper.hh>
  
-+Boolean g_forceTCP = False;
++extern Boolean g_forceTCP;
 +
  ////////// RTSPServer implementation //////////
  
