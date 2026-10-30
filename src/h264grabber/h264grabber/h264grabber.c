@@ -388,6 +388,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Error opening fifo %s\n", FIFO_NAME_LOW);
                 return -5;
             }
+            if (fcntl(fileno(fOut), F_SETPIPE_SZ, 4 * 1024 * 1024) < 0)
+                fprintf(stderr, "Warning: unable to set low FIFO size\n");
         } else if (res == RESOLUTION_HIGH) {
             unlink(FIFO_NAME_HIGH);
             if (mkfifo(FIFO_NAME_HIGH, mode) < 0) {
@@ -399,6 +401,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Error opening fifo %s\n", FIFO_NAME_HIGH);
                 return -5;
             }
+            if (fcntl(fileno(fOut), F_SETPIPE_SZ, 4 * 1024 * 1024) < 0)
+                fprintf(stderr, "Warning: unable to set high FIFO size\n");
         }
     }
 

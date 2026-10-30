@@ -448,6 +448,8 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Error opening fifo %s\n", FIFO_NAME_LOW);
                 return -6;
             }
+            if (fcntl(fileno(fOutLow), F_SETPIPE_SZ, 4 * 1024 * 1024) < 0)
+                fprintf(stderr, "Warning: unable to set low FIFO size\n");
             // Set non blocking
             int flags;
             if ((flags = fcntl(fileno(fOutLow), F_GETFL, 0)) < 0) {
@@ -475,7 +477,7 @@ int main(int argc, char **argv) {
             }
             // Set fifo size
             int flags;
-            if ((flags = fcntl(fileno(fOutHigh), F_SETPIPE_SZ, 256 * 1024)) < 0) {
+            if ((flags = fcntl(fileno(fOutHigh), F_SETPIPE_SZ, 4 * 1024 * 1024)) < 0) {
                 return -6;
             };
             fprintf(stderr, "Fifo size is %d\n", fcntl(fileno(fOutHigh), F_GETPIPE_SZ));

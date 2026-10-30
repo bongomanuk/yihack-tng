@@ -51,6 +51,9 @@ rm -f /tmp/sd/hack_debug.log
 log "Starting system.sh"
 
 export PATH=$PATH:/home/base/tools:/home/yi-hack/bin:/home/yi-hack/sbin:/tmp/sd/yi-hack/bin:/tmp/sd/yi-hack/sbin
+
+# Allow the H.264 grabber to use a multi-frame FIFO buffer
+[ -w /proc/sys/fs/pipe-max-size ] && echo 4194304 > /proc/sys/fs/pipe-max-size 2>/dev/null
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lib:/home/yi-hack/lib:/tmp/sd/yi-hack/lib
 
 ulimit -s 1024
