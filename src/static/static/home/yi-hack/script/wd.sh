@@ -45,8 +45,18 @@ restart_rtsp()
     $START_STOP_SCRIPT rtsp start
 }
 
+enforce_rotation()
+{
+    if [ "$(get_camera_config ROTATE)" == "no" ]; then
+        $YI_HACK_PREFIX/bin/ipc_cmd -r off >/dev/null 2>&1
+    else
+        $YI_HACK_PREFIX/bin/ipc_cmd -r on >/dev/null 2>&1
+    fi
+}
+
 check_rtsp()
 {
+    enforce_rotation
     if [[ $(get_camera_config SWITCH_ON) == "yes" ]] ; then
         #  echo "$(date +'%Y-%m-%d %H:%M:%S') - Checking RTSP process..." >> $LOG_FILE
         NETSTAT=`netstat -an 2>&1 | grep ":$RTSP_PORT_NUMBER "`
