@@ -1,6 +1,8 @@
 
 /build/*
 !/build/.gitkeep
+/dist/
+/release-staging/
 
 /stock_firmware/y203c/*
 !/stock_firmware/y203c/.gitkeep

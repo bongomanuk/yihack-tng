@@ -23,26 +23,18 @@ jobs:
             docker.io/borodiliz/yi-hack:latest \
             -lc './scripts/compile.sh h264grabber'
 
-      - name: Package release
-        run: |
-          mkdir -p release
-          cp build/home/yi-hack/bin/h264grabber release/
-          cp build/home/yi-hack/bin/h264grabber2 release/
-          cp src/static/static/home/yi-hack/script/wd.sh release/
-          cp src/static/static/home/yi-hack/script/service.sh release/
-          cp src/static/static/home/yi-hack/script/system.sh release/
-          chmod 755 release/*
-          tar -czf "yihack-tng-${GITHUB_REF_NAME}.tar.gz" -C release .
+      - name: Package per-model release assets
+        run: ./scripts/package_release.sh "$GITHUB_REF_NAME"
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: yihack-tng
-          path: yihack-tng-*.tar.gz
+          path: dist/*.tar.gz
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: yihack-tng-*.tar.gz
+          files: dist/*.tar.gz
           generate_release_notes: true

@@ -65,11 +65,21 @@ Linux imposes a per-pipe maximum (`/proc/sys/fs/pipe-max-size`). On the tested `
 
 For a binary-only update, the startup line must be added manually or the pipe maximum will prevent the larger FIFO from being allocated.
 
-## Compatibility
+## Supported cameras
 
-The upstream project supports several Yi/MStar models selected by serial prefix and stock firmware version. This fork inherits that model support, but only `y203c` has been explicitly exercised with the watchdog and FIFO changes.
+The model list is inherited from upstream. `yihack-tng` produces a package for every MStar model the build currently knows about:
 
-Treat other models as upstream-supported but not yet validated with this fork’s binary patch. Do not flash a build intended for a different model or serial prefix.
+| Model | Devices | Status |
+| --- | --- | --- |
+| `y203c` | Yi 1080p Home 4/6/9/BFUS, 4.5.0 | Tested with this fork’s watchdog/FIFO changes |
+| `h201c` | Yi 1080p Dome 6/BFUS/4FCN, 4.6.0 | Upstream-supported; package available, untested here |
+| `y25` | Yi 1080p Home 4/9FUS, XiaoYi Y3 9FCN, 4.2.0 | Upstream-supported; package available, untested here |
+| `y23` | Yi 1080p Home 6FUS/4FCN/5FCN, 2.1.0 | Upstream-supported; package available, untested here |
+| `h305r` | ieGeek IE80, 8.0.0 | Upstream experimental; package available, untested here |
+| `y30` | YI Dome Camera X, 4.0.0 | Upstream experimental; package available, untested here |
+| `h307` | YI Home Camera H7, 4.4.0 | Upstream experimental; package available, untested here |
+
+The binaries and scripts are shared across models; the camera selects its model suffix from `/home/yi-hack/model_suffix`. Do not flash a build intended for a different model or serial prefix.
 
 ## Installation
 
@@ -79,7 +89,7 @@ A complete firmware build still needs the original MStar `home` and `rootfs` par
 
 ### Binary patch
 
-The release asset contains the patched binaries and watchdog scripts:
+The model-specific release asset contains the patched binaries and watchdog scripts:
 
 ```text
 h264grabber
@@ -87,9 +97,11 @@ h264grabber2
 wd.sh
 service.sh
 system.sh
+MODEL
+README.txt
 ```
 
-On a compatible camera:
+Choose the asset matching the camera model. On a compatible camera:
 
 ```sh
 cp /home/yi-hack/bin/h264grabber  /home/yi-hack/bin/h264grabber.bak
@@ -148,19 +160,25 @@ git submodule update --init
 
 ## Releases
 
-The workflow in `.github/workflows/build-release.yml` builds the patched grabber on a tag and attaches:
+The workflow in `.github/workflows/build-release.yml` builds the patched grabber on a tag and attaches one asset per supported model:
 
 ```text
-yihack-tng-<tag>.tar.gz
+yihack-tng-<tag>-y203c.tar.gz
+yihack-tng-<tag>-h201c.tar.gz
+yihack-tng-<tag>-y25.tar.gz
+yihack-tng-<tag>-y23.tar.gz
+yihack-tng-<tag>-h305r.tar.gz
+yihack-tng-<tag>-y30.tar.gz
+yihack-tng-<tag>-h307.tar.gz
 ```
 
-Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.3`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.3).
+Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.4`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.4).
 
 ## Builds and testing
 
-GitHub Actions can build the package on a tag; the workflow currently compiles `h264grabber`/`h264grabber2` and packages the RTSP scripts. It can be extended to produce packages for other MStar models, but each model needs its own firmware/scripts and validation.
+GitHub Actions compiles `h264grabber`/`h264grabber2` once and packages the shared RTSP scripts for every model in the upstream MStar camera list. The package is not a complete firmware image; full firmware builds still require stock `home`/`rootfs` partitions for the specific model.
 
-The maintainer does not have access to hardware to test builds. Releases are compiled and packaged automatically, but are not hardware-validated; test on a spare camera before deploying.
+The maintainer does not have access to hardware to test builds. Releases are compiled and packaged automatically, but are not hardware-validated; test on a spare camera before deploying. Models other than `y203c` are upstream-supported or experimental and should be treated as untested here.
 
 ## Credits
 
