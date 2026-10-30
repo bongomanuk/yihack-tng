@@ -1,5 +1,13 @@
 #!/bin/sh
 
+LOCK_FILE="/tmp/wd.sh.pid"
+if [ -f "$LOCK_FILE" ] && kill -0 "$(cat "$LOCK_FILE" 2>/dev/null)" 2>/dev/null; then
+    echo "Already Running - Quitting"
+    exit 1
+fi
+echo $$ > "$LOCK_FILE"
+export LD_LIBRARY_PATH=/home/ms:/home/yi-hack/lib:/home/app/lib:/home/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
 CONF_FILE="etc/system.conf"
 CAMERA_CONF_FILE="etc/camera.conf"
 
@@ -9,11 +17,12 @@ MODEL_SUFFIX=$(cat /home/yi-hack/model_suffix)
 START_STOP_SCRIPT=$YI_HACK_PREFIX/script/service.sh
 
 #LOG_FILE="/tmp/sd/wd.log"
-LOG_FILE="/dev/null"
+LOG_FILE="/tmp/wd.log"
 LOGWIFI_FILE="/tmp/sd/hack_wififailsafe.log"
 
 COUNTER_H=0
 COUNTER_L=0
+COUNTER_SYN=0
 COUNTER_LIMIT=10
 INTERVAL=10
 
@@ -38,12 +47,14 @@ check_rtsp()
 {
     if [[ $(get_camera_config SWITCH_ON) == "yes" ]] ; then
         #  echo "$(date +'%Y-%m-%d %H:%M:%S') - Checking RTSP process..." >> $LOG_FILE
-        LISTEN=`netstat -an 2>&1 | grep ":$RTSP_PORT_NUMBER " | grep LISTEN | grep -c ^`
-        SOCKET=`netstat -an 2>&1 | grep ":$RTSP_PORT_NUMBER " | grep ESTABLISHED | grep -c ^`
-        CPU_1_L=`top -b -n 2 -d 1 | grep h264grabber_l | grep -v grep | tail -n 1 | awk '{print $8}'`
-        CPU_1_H=`top -b -n 2 -d 1 | grep h264grabber_h | grep -v grep | tail -n 1 | awk '{print $8}'`
-#        CPU_1=`top -b -n 2 -d 1 | grep h264grabber2 | grep -v grep | tail -n 1 | awk '{print $8}'`
-        CPU_2=`top -b -n 2 -d 1 | grep rRTSPServer | grep -v grep | tail -n 1 | awk '{print $8}'`
+        NETSTAT=`netstat -an 2>&1 | grep ":$RTSP_PORT_NUMBER "`
+        LISTEN=`echo "$NETSTAT" | grep LISTEN | grep -c ^`
+        SOCKET=`echo "$NETSTAT" | grep ESTABLISHED | grep -c ^`
+        SYN=`echo "$NETSTAT" | grep SYN_RECV | grep -c ^`
+        TOP=`top -b -n 2 -d 1`
+        CPU_1_L=`echo "$TOP" | grep h264grabber_l | grep -v grep | tail -n 1 | awk '{print $8}'`
+        CPU_1_H=`echo "$TOP" | grep h264grabber_h | grep -v grep | tail -n 1 | awk '{print $8}'`
+        CPU_2=`echo "$TOP" | grep rRTSPServer | grep -v grep | tail -n 1 | awk '{print $8}'`
 
         if [ $LISTEN -eq 0 ]; then
             echo "$(date +'%Y-%m-%d %H:%M:%S') - Restarting rtsp process" >> $LOG_FILE
@@ -74,6 +85,20 @@ check_rtsp()
                 restart_rtsp
             fi
             COUNTER_H=0
+        fi
+        if [ "$SYN" -gt 0 ] && [ "$SOCKET" -eq 0 ]; then
+            COUNTER_SYN=$((COUNTER_SYN+1))
+            echo "$(date +'%Y-%m-%d %H:%M:%S') - RTSP SYN_RECV with no established client ($COUNTER_SYN)" >> $LOG_FILE
+            if [ "$COUNTER_SYN" -ge 3 ]; then
+                echo "$(date +'%Y-%m-%d %H:%M:%S') - Restarting stuck RTSP listener" >> $LOG_FILE
+                killall -q rRTSPServer
+                killall -q h264grabber h264grabber_l h264grabber_h
+                sleep 1
+                restart_rtsp
+                COUNTER_SYN=0
+            fi
+        else
+            COUNTER_SYN=0
         fi
         if [ $SOCKET -gt 0 ]; then
             if [ "$CPU_1_L" == "0.0" ] && [ "$CPU_2" == "0.0" ]; then
@@ -267,13 +292,11 @@ echo "$(date +'%Y-%m-%d %H:%M:%S') - Starting RTSP watchdog..." >> $LOG_FILE
 
 while true
 do
-    if [[ "$RTSP_ALT" == "standard" ]] ; then
-        check_rtsp
-    elif [[ "$RTSP_ALT" == "alternative" ]] ; then
-        check_rtsp_alt
-    else
-        check_rtsp_go2rtc
-    fi
+    case "$RTSP_ALT" in
+        alternative) check_rtsp_alt ;;
+        go2rtc) check_rtsp_go2rtc ;;
+        *) check_rtsp ;;
+    esac
     check_rmm
     check_mqtt
     check_wifi

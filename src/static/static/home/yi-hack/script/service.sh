@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export LD_LIBRARY_PATH=/home/ms:/home/yi-hack/lib:/home/app/lib:/home/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
 CONF_FILE="etc/system.conf"
 
 YI_HACK_PREFIX="/home/yi-hack"
