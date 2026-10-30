@@ -1,81 +1,103 @@
 # yihack-tng
 
-A stability-focused fork of [roleoroleo/yi-hack-MStar](https://github.com/roleoroleo/yi-hack-MStar) for Yi cameras based on the MStar platform.
+**A stability-first firmware fork for MStar-based Yi cameras that feed local NVRs and Frigate.**
 
-The original project is an excellent local-firmware replacement for Yi/MStar cameras. `yihack-tng` keeps that foundation and concentrates on the failure modes that matter when the camera is feeding an NVR or Frigate continuously: RTSP watchdog false restarts, stuck listeners, stale library paths, and frame loss caused by a too-small camera-side FIFO.
+`yihack-tng` starts from [roleoroleo/yi-hack-MStar](https://github.com/roleoroleo/yi-hack-MStar), but it is not a rebrand or a feature-parity clone. It is a small, opinionated maintenance fork for one job: keeping an old MStar camera streaming continuously to a local recorder without unnecessary restarts, hidden frame loss, or fragile release handling.
 
-## What it is
+The camera hardware is still the camera hardware. This project does not replace the closed `rmm` media pipeline, does not add cloud services, and does not claim that software can make a marginal Wi-Fi link lossless.
 
-MStar Yi cameras run a closed media pipeline (`rmm`, `h264grabber`, `rRTSPServer`) on very small hardware. The firmware provides local RTSP, a web UI, SSH, ONVIF, FTP and optional MQTT without requiring the vendor cloud.
+## Why this fork exists
 
-This fork is aimed at continuous local recording rather than cloud/app use. It does not replace the closed MStar media pipeline, and it does not claim that a buffer can make a lossy Wi-Fi link lossless.
+A camera that looks fine in a vendor app can still be a poor NVR source. The failure modes are usually not dramatic:
 
-## Changes in this fork
+- the RTSP watchdog treats a healthy but idle-ish stream as locked and restarts it;
+- a watchdog restart loses `LD_LIBRARY_PATH` and cannot start the RTSP server again;
+- duplicate watchdogs race each other;
+- the H.264 grabber fills a small FIFO, blocks, and the camera’s shared frame ring overwrites frames;
+- the result is a stream that “works” but drops frames at unpredictable intervals.
 
-### RTSP watchdog
+`yihack-tng` addresses those specific paths and keeps the rest of the upstream firmware familiar.
 
-- Added a PID lock so duplicate `wd.sh` instances cannot race each other.
-- Fixed `RTSP_ALT=no`: it is now treated as the standard `rRTSPServer` path instead of falling into the go2rtc branch and restarting RTSP every 10 seconds.
-- Added recovery for a listener stuck in `SYN_RECV` with no established client.
-- Added `/home/ms` to `LD_LIBRARY_PATH` so watchdog restarts do not fail with missing `libOMX_AVQE_A.so`.
-- Reused one `netstat` and one `top` result per check instead of spawning several `top` processes every 10 seconds.
-- Logs watchdog activity to `/tmp/wd.log` instead of discarding it.
+## Design goals
 
-### Frame buffering
+- **Continuous local streaming first.** The target workload is Frigate/NVR, not phone-app viewing.
+- **No forced quality reduction.** Resolution is a user choice, not a hidden stability hack.
+- **Predictable recovery.** Restart RTSP only when it is actually stuck.
+- **Visible diagnostics.** Watchdog decisions go to `/tmp/wd.log`, not `/dev/null`.
+- **Reversible changes.** Binary releases are small and can be backed up before deployment.
 
-The H.264 path is:
+## What is different from upstream
+
+| Area | Upstream MStar behaviour | yihack-tng |
+| --- | --- | --- |
+| RTSP watchdog selection | Anything other than `standard`/`alternative` falls into the go2rtc branch | `standard`, `no`, empty and unknown values safely use the standard `rRTSPServer` path |
+| Duplicate watchdogs | Multiple `wd.sh` processes can run | PID lock prevents a second instance |
+| Stuck listener | A listener in `SYN_RECV` with no established client may never recover | Three consecutive checks with `SYN_RECV` and no `ESTABLISHED` trigger a clean RTSP restart |
+| Restart environment | `service.sh` restarts can miss `/home/ms` and fail on `libOMX_AVQE_A.so` | The RTSP start path exports the required library directories |
+| Watchdog CPU cost | Several `top` invocations per check | One `netstat` and one `top` result are reused per check |
+| Frame buffering | Default 64 KB FIFO in the standard grabber | 4 MiB FIFO in both grabber variants, with the camera pipe limit raised at boot and at runtime |
+| Release process | No binary release workflow in this fork | Tag-driven GitHub Actions build and release of the patched grabber |
+
+## The RTSP path
 
 ```text
-camera shared frame buffer -> h264grabber -> FIFO -> rRTSPServer -> RTSP client
+camera sensor / encoder
+        |
+        v
+  fshare frame buffer
+        |
+        v
+   h264grabber  ---- FIFO (/tmp/h264_high_fifo) ---->  rRTSPServer  ---->  Frigate/NVR
 ```
 
-The old grabber used the Linux default 64 KB FIFO. This fork raises the camera FIFO limit to 4 MiB and configures both `h264grabber` and `h264grabber2` to use it. At typical HD frame sizes this holds several seconds of frames and absorbs short RTSP/network stalls.
+The buffer is deliberately on the camera side of that path. It absorbs short stalls between the encoder and the RTSP server. It cannot recover frames that the encoder never produced, frames lost by the camera’s Wi-Fi stack, or a decoder failure downstream.
 
-A buffer cannot recover frames that the camera encoder has already lost or frames lost during a long Wi-Fi outage. It also cannot repair a corrupt source stream.
+### Buffer sizing
 
-### Build/release
+Linux imposes a per-pipe maximum (`/proc/sys/fs/pipe-max-size`). On the tested `y203c` camera this defaulted to 1 MB, smaller than the 4 MiB target. `yihack-tng` therefore:
 
-- Cross-compiles cleanly with the MStar build image in the upstream documentation.
-- A GitHub Actions workflow builds the patched `h264grabber`/`h264grabber2` binaries on tags and publishes a release tarball.
+1. raises the pipe maximum at startup from `script/system.sh`;
+2. opens the grabber FIFO with `F_SETPIPE_SZ` set to 4 MiB;
+3. uses the same limit in both `h264grabber` and `h264grabber2`.
 
-## Status
+For a binary-only update, the startup line must be added manually or the pipe maximum will prevent the larger FIFO from being allocated.
 
-Verified on a Yi `y203c` (MStar) camera being used as a Frigate source. The camera’s own encoder and Wi-Fi link remain the limiting factors; the watchdog and FIFO changes improve recovery and jitter tolerance, not the physical link.
+## Compatibility
+
+The upstream project supports several Yi/MStar models selected by serial prefix and stock firmware version. This fork inherits that model support, but only `y203c` has been explicitly exercised with the watchdog and FIFO changes.
+
+Treat other models as upstream-supported but not yet validated with this fork’s binary patch. Do not flash a build intended for a different model or serial prefix.
 
 ## Installation
 
 ### Full firmware
 
-The complete firmware build requires the original MStar `home` and `rootfs` partitions under `stock_firmware/y203c/`; those proprietary images are not included here. Follow the upstream installation and manual-upgrade documentation.
+A complete firmware build still needs the original MStar `home` and `rootfs` partitions in `stock_firmware/<model>/`. Those proprietary images are not part of this repository. Use the upstream installation and manual-upgrade procedure, then apply this fork’s source changes.
 
 ### Binary patch
 
-The release tarball contains:
+The release asset contains the patched binaries only:
 
 ```text
 h264grabber
 h264grabber2
 ```
 
-On a camera running the matching MStar firmware:
+On a compatible camera:
 
 ```sh
-# back up first
 cp /home/yi-hack/bin/h264grabber  /home/yi-hack/bin/h264grabber.bak
 cp /home/yi-hack/bin/h264grabber2 /home/yi-hack/bin/h264grabber2.bak 2>/dev/null || true
 
-# install the patched binaries
 cp h264grabber  /home/yi-hack/bin/h264grabber
 cp h264grabber2 /home/yi-hack/bin/h264grabber2
+chmod 755 /home/yi-hack/bin/h264grabber /home/yi-hack/bin/h264grabber2
 
-# allow the 4 MiB pipe
 echo 4194304 > /proc/sys/fs/pipe-max-size
-
-# restart RTSP
 killall -q h264grabber h264grabber_h rRTSPServer
 ```
 
-The full firmware also applies the pipe limit at boot from `script/system.sh`. For a binary-only update, add this line to the camera’s startup script if you want it to persist across reboots:
+To persist the pipe limit across reboots, add this to the camera’s `script/system.sh`:
 
 ```sh
 [ -w /proc/sys/fs/pipe-max-size ] && echo 4194304 > /proc/sys/fs/pipe-max-size 2>/dev/null
@@ -83,7 +105,7 @@ The full firmware also applies the pipe limit at boot from `script/system.sh`. F
 
 ## Build
 
-The upstream build image is used for cross-compilation:
+The upstream MStar build image is used directly; Docker compatibility is not required:
 
 ```sh
 podman run --rm --network none --entrypoint /bin/bash \
@@ -92,14 +114,14 @@ podman run --rm --network none --entrypoint /bin/bash \
   -lc './scripts/compile.sh h264grabber'
 ```
 
-Output:
+Outputs:
 
 ```text
 build/home/yi-hack/bin/h264grabber
 build/home/yi-hack/bin/h264grabber2
 ```
 
-A full build additionally needs the submodules and stock partitions:
+A full firmware build additionally requires the submodules and stock partitions:
 
 ```sh
 git submodule update --init
@@ -109,24 +131,28 @@ git submodule update --init
 ./scripts/pack_fw.all.sh
 ```
 
-## Supported cameras
+## Releases
 
-Support follows the upstream MStar project. This fork has been exercised on `y203c`; other models inherit upstream support and should be treated as experimental.
+The workflow in `.github/workflows/build-release.yml` builds the patched grabber on a tag and attaches:
 
-Do not flash a build for a different model or serial prefix.
+```text
+yihack-tng-h264grabber-<tag>.tar.gz
+```
+
+Release assets are binary patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source.
 
 ## Credits
 
-This project stands on the work of the yi-hack community:
+`yihack-tng` is built on work by:
 
-- **roleoroleo** — [yi-hack-MStar](https://github.com/roleoroleo/yi-hack-MStar), the direct upstream of this fork
-- **TheCrypt0** — [yi-hack-v4](https://github.com/TheCrypt0/yi-hack-v4), the foundation for the MStar port
+- **[roleoroleo](https://github.com/roleoroleo)** — [yi-hack-MStar](https://github.com/roleoroleo/yi-hack-MStar), the upstream project this fork follows
+- **[TheCrypt0](https://github.com/TheCrypt0)** — [yi-hack-v4](https://github.com/TheCrypt0/yi-hack-v4), the foundation for the MStar port
 - **andy2301** — early RTSP implementation ideas
-- **borodiliz** — [yi-hack build image](https://hub.docker.com/r/borodiliz/yi-hack)
-- **Live555** — RTSP/RTP server framework used by `rRTSPServer`
-- Everyone who contributed to the earlier `yi-hack` projects and the Home Assistant/Frigate communities
+- **[borodiliz](https://hub.docker.com/r/borodiliz/yi-hack)** — the MStar build image used for reproducible cross-compilation
+- **Live555** — the RTSP/RTP framework behind `rRTSPServer`
+- **The wider yi-hack and Home Assistant/Frigate communities** — documentation, testing, and reverse-engineering work that made these cameras usable locally
 
-The watchdog, FIFO and release-workflow changes in this fork are maintained by `bongomanuk`.
+The `yihack-tng` watchdog, FIFO, documentation, and release-workflow changes are maintained by [bongomanuk](https://github.com/bongomanuk).
 
 ## License
 
