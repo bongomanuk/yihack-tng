@@ -35,6 +35,7 @@ A camera that looks fine in a vendor app can still be a poor NVR source. The fai
 | RTSP watchdog selection | Anything other than `standard`/`alternative` falls into the go2rtc branch | `standard`, `no`, empty and unknown values safely use the standard `rRTSPServer` path |
 | Duplicate watchdogs | Multiple `wd.sh` processes can run | PID lock prevents a second instance |
 | Stuck listener | A listener in `SYN_RECV` with no established client may never recover | Three consecutive checks with `SYN_RECV` and no `ESTABLISHED` trigger a clean RTSP restart |
+| Stale RTSP session | The listener and TCP connection stay up, but the server stops forwarding frames | Three checks with no RTSP I/O progress while a client is connected restart the RTSP pipeline |
 | Restart environment | `service.sh` restarts can miss `/home/ms` and fail on `libOMX_AVQE_A.so` | The RTSP start path exports the required library directories |
 | Watchdog CPU cost | Several `top` invocations per check | One `netstat` and one `top` result are reused per check |
 | Frame buffering | Default 64 KB FIFO in the standard grabber | 4 MiB FIFO in both grabber variants, with the camera pipe limit raised at boot and at runtime |
@@ -153,7 +154,7 @@ The workflow in `.github/workflows/build-release.yml` builds the patched grabber
 yihack-tng-h264grabber-<tag>.tar.gz
 ```
 
-Release assets are binary patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source.
+Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.2`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.2).
 
 ## Credits
 
