@@ -156,6 +156,12 @@ yihack-tng-<tag>.tar.gz
 
 Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.3`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.3).
 
+## Builds and testing
+
+GitHub Actions can build the package on a tag; the workflow currently compiles `h264grabber`/`h264grabber2` and packages the RTSP scripts. It can be extended to produce packages for other MStar models, but each model needs its own firmware/scripts and validation.
+
+The maintainer does not have access to hardware to test builds. Releases are compiled and packaged automatically, but are not hardware-validated; test on a spare camera before deploying.
+
 ## Credits
 
 `yihack-tng` is built on work by:
