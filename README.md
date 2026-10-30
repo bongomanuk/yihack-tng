@@ -151,10 +151,10 @@ git submodule update --init
 The workflow in `.github/workflows/build-release.yml` builds the patched grabber on a tag and attaches:
 
 ```text
-yihack-tng-h264grabber-<tag>.tar.gz
+yihack-tng-<tag>.tar.gz
 ```
 
-Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.2`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.2).
+Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.3`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.3).
 
 ## Credits
 
