@@ -18,6 +18,7 @@ for CAMERA in "${!CAMERAS[@]}"; do
 
     cp "$ROOT_DIR/build/home/yi-hack/bin/h264grabber" "$MODEL_DIR/"
     cp "$ROOT_DIR/build/home/yi-hack/bin/h264grabber2" "$MODEL_DIR/"
+    cp "$ROOT_DIR/build/home/yi-hack/bin/rRTSPServer" "$MODEL_DIR/"
     cp "$ROOT_DIR/src/static/static/home/yi-hack/script/wd.sh" "$MODEL_DIR/"
     cp "$ROOT_DIR/src/static/static/home/yi-hack/script/service.sh" "$MODEL_DIR/"
     cp "$ROOT_DIR/src/static/static/home/yi-hack/script/system.sh" "$MODEL_DIR/"
@@ -27,8 +28,12 @@ for CAMERA in "${!CAMERAS[@]}"; do
     cat > "$MODEL_DIR/README.txt" <<EOF
 yihack-tng $TAG for $CAMERA
 
-This package contains the model-agnostic MStar grabber binaries and RTSP
-scripts. The camera selects its own model suffix from /home/yi-hack/model_suffix.
+This package contains the model-agnostic MStar grabber binaries, the patched
+RTSP server, and RTSP scripts. The camera selects its own model suffix from
+/home/yi-hack/model_suffix.
+
+Set RTSP_TRANSPORT=tcp in /home/yi-hack/etc/system.conf to force RTP-over-TCP,
+then restart RTSP. The default is udp.
 
 Supported package targets: ${!CAMERAS[*]}
 

@@ -65,6 +65,17 @@ Linux imposes a per-pipe maximum (`/proc/sys/fs/pipe-max-size`). On the tested `
 
 For a binary-only update, the startup line must be added manually or the pipe maximum will prevent the larger FIFO from being allocated.
 
+### RTSP transport
+
+`rRTSPServer` now accepts `RTSP_TRANSPORT=udp|tcp` from `/home/yi-hack/etc/system.conf`. `udp` is the default. `tcp` forces interleaved RTP-over-TCP for clients that request UDP, which trades latency for retransmission on marginal Wi-Fi links. Restart RTSP after changing it:
+
+```sh
+sed -i 's/^RTSP_TRANSPORT=.*/RTSP_TRANSPORT=tcp/' /home/yi-hack/etc/system.conf
+/home/yi-hack/script/service.sh rtsp restart
+```
+
+This option requires the patched `rRTSPServer` from the release.
+
 ## Supported cameras
 
 The model list is inherited from upstream. `yihack-tng` produces a package for every MStar model the build currently knows about:
@@ -94,6 +105,7 @@ The model-specific release asset contains the patched binaries and watchdog scri
 ```text
 h264grabber
 h264grabber2
+rRTSPServer
 wd.sh
 service.sh
 system.sh
@@ -106,10 +118,12 @@ Choose the asset matching the camera model. On a compatible camera:
 ```sh
 cp /home/yi-hack/bin/h264grabber  /home/yi-hack/bin/h264grabber.bak
 cp /home/yi-hack/bin/h264grabber2 /home/yi-hack/bin/h264grabber2.bak 2>/dev/null || true
+cp /home/yi-hack/bin/rRTSPServer  /home/yi-hack/bin/rRTSPServer.bak
 
 cp h264grabber  /home/yi-hack/bin/h264grabber
 cp h264grabber2 /home/yi-hack/bin/h264grabber2
-chmod 755 /home/yi-hack/bin/h264grabber /home/yi-hack/bin/h264grabber2
+cp rRTSPServer  /home/yi-hack/bin/rRTSPServer
+chmod 755 /home/yi-hack/bin/h264grabber /home/yi-hack/bin/h264grabber2 /home/yi-hack/bin/rRTSPServer
 
 echo 4194304 > /proc/sys/fs/pipe-max-size
 
@@ -172,11 +186,11 @@ yihack-tng-<tag>-y30.tar.gz
 yihack-tng-<tag>-h307.tar.gz
 ```
 
-Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.4`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.4).
+Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.5`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.5).
 
 ## Builds and testing
 
-GitHub Actions compiles `h264grabber`/`h264grabber2` once and packages the shared RTSP scripts for every model in the upstream MStar camera list. The package is not a complete firmware image; full firmware builds still require stock `home`/`rootfs` partitions for the specific model.
+GitHub Actions compiles `h264grabber`/`h264grabber2` and the patched `rRTSPServer`, then packages the shared RTSP scripts for every model in the upstream MStar camera list. The package is not a complete firmware image; full firmware builds still require stock `home`/`rootfs` partitions for the specific model.
 
 The maintainer does not have access to hardware to test builds. Releases are compiled and packaged automatically, but are not hardware-validated; test on a spare camera before deploying. Models other than `y203c` are upstream-supported or experimental and should be treated as untested here.
 

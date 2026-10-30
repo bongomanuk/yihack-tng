@@ -54,6 +54,7 @@ tar zxvf $ARCHIVE
 
 patch -p0 < rRTSPServer.patch
 patch -p0 < friend.patch
+patch -p0 < force_tcp.patch
 
 cd live || exit 1
 

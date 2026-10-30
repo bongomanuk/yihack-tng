@@ -39,6 +39,8 @@
 
 #include "rRTSPServer.h"
 
+extern Boolean g_forceTCP;
+
 #define RESOLUTION_NONE 0
 #define RESOLUTION_LOW  360
 #define RESOLUTION_HIGH 1080
@@ -160,6 +162,8 @@ void print_usage(char *progname)
     fprintf(stderr, "\t\tset password\n");
     fprintf(stderr, "\t-d DEBUG, --debug DEBUG\n");
     fprintf(stderr, "\t\t0 none, 1 grabber, 2 rtsp library or 3 both\n");
+    fprintf(stderr, "\t-T TRANSPORT, --transport TRANSPORT\n");
+    fprintf(stderr, "\t\tset RTP transport: udp or tcp (default udp)\n");
     fprintf(stderr, "\t-h,      --help\n");
     fprintf(stderr, "\t\tprint this help\n");
 }
@@ -204,13 +208,14 @@ int main(int argc, char** argv)
             {"user",  required_argument, 0, 'u'},
             {"password",  required_argument, 0, 'w'},
             {"debug",  required_argument, 0, 'd'},
+            {"transport", required_argument, 0, 'T'},
             {"help",  no_argument, 0, 'h'},
             {0, 0, 0, 0}
         };
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "r:c:C:a:b:p:n:u:w:d:h",
+        c = getopt_long (argc, argv, "r:c:C:a:b:p:n:u:w:d:T:h",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -334,6 +339,17 @@ int main(int argc, char** argv)
             if ((debug < 0) || (debug > 3)) {
                 print_usage(argv[0]);
                 exit(EXIT_FAILURE);
+            }
+            break;
+
+        case 'T':
+            if (strcasecmp("tcp", optarg) == 0) {
+                g_forceTCP = True;
+            } else if (strcasecmp("udp", optarg) == 0) {
+                g_forceTCP = False;
+            } else {
+                print_usage(argv[0]);
+                return -1;
             }
             break;
 

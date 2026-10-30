@@ -16,12 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build patched grabber
+      - name: Build patched grabber and RTSP server
         run: |
-          docker run --rm --network none --entrypoint /bin/bash \
+          docker run --rm --entrypoint /bin/bash \
             -v "${GITHUB_WORKSPACE}:/build" -w /build \
             docker.io/borodiliz/yi-hack:latest \
-            -lc './scripts/compile.sh h264grabber'
+            -lc './scripts/compile.sh h264grabber && mkdir -p /tmp/tng-bin && cp build/home/yi-hack/bin/h264grabber build/home/yi-hack/bin/h264grabber2 /tmp/tng-bin/ && ./scripts/compile.sh rRTSPServer && cp /tmp/tng-bin/h264grabber /tmp/tng-bin/h264grabber2 build/home/yi-hack/bin/'
 
       - name: Package per-model release assets
         run: ./scripts/package_release.sh "$GITHUB_REF_NAME"

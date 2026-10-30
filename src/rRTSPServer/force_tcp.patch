@@ -1,0 +1,23 @@
+--- liveMedia/RTSPServer.cpp
++++ liveMedia/RTSPServer.cpp
+@@ -24,6 +24,8 @@
+ #include "Base64.hh"
+ #include <GroupsockHelper.hh>
+ 
++Boolean g_forceTCP = False;
++
+ ////////// RTSPServer implementation //////////
+ 
+ RTSPServer*
+@@ -1520,6 +1522,11 @@
+ 			 clientsDestinationAddressStr, clientsDestinationTTL,
+ 			 clientRTPPortNum, clientRTCPPortNum,
+ 			 rtpChannelId, rtcpChannelId);
++    if (g_forceTCP && streamingMode != RTP_TCP) {
++      streamingMode = RTP_TCP;
++      rtpChannelId = fTCPStreamIdCount;
++      rtcpChannelId = fTCPStreamIdCount + 1;
++    }
+     if ((streamingMode == RTP_TCP && rtpChannelId == 0xFF) ||
+ 	(streamingMode != RTP_TCP && fOurClientConnection->fClientOutputSocket != fOurClientConnection->fClientInputSocket)) {
+       // An anomolous situation, caused by a buggy client.  Either:
