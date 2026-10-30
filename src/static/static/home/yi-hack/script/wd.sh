@@ -23,6 +23,8 @@ LOGWIFI_FILE="/tmp/sd/hack_wififailsafe.log"
 COUNTER_H=0
 COUNTER_L=0
 COUNTER_SYN=0
+COUNTER_STALL=0
+LAST_RTSP_IO=""
 COUNTER_LIMIT=10
 INTERVAL=10
 
@@ -55,6 +57,16 @@ check_rtsp()
         CPU_1_L=`echo "$TOP" | grep h264grabber_l | grep -v grep | tail -n 1 | awk '{print $8}'`
         CPU_1_H=`echo "$TOP" | grep h264grabber_h | grep -v grep | tail -n 1 | awk '{print $8}'`
         CPU_2=`echo "$TOP" | grep rRTSPServer | grep -v grep | tail -n 1 | awk '{print $8}'`
+        RTSP_PID=`pidof rRTSPServer | awk '{print $1}'`
+        H264_PID=`pidof h264grabber_h | awk '{print $1}'`
+        RTSP_IO=""
+        H264_TICKS=""
+        if [ -n "$RTSP_PID" ] && [ -r "/proc/$RTSP_PID/io" ]; then
+            RTSP_IO=`awk '/^rchar:|^wchar:/{s+=$2} END{print s+0}' /proc/$RTSP_PID/io`
+        fi
+        if [ -n "$H264_PID" ] && [ -r "/proc/$H264_PID/stat" ]; then
+            H264_TICKS=`awk '{print $14+$15}' /proc/$H264_PID/stat`
+        fi
 
         if [ $LISTEN -eq 0 ]; then
             echo "$(date +'%Y-%m-%d %H:%M:%S') - Restarting rtsp process" >> $LOG_FILE
@@ -100,6 +112,26 @@ check_rtsp()
         else
             COUNTER_SYN=0
         fi
+        if [ "$SOCKET" -gt 0 ] && [ -n "$RTSP_IO" ]; then
+            if [ "$RTSP_IO" = "$LAST_RTSP_IO" ]; then
+                COUNTER_STALL=$((COUNTER_STALL+1))
+                echo "$(date +'%Y-%m-%d %H:%M:%S') - RTSP session made no I/O progress ($COUNTER_STALL), grabber ticks $H264_TICKS" >> $LOG_FILE
+                if [ "$COUNTER_STALL" -ge 3 ]; then
+                    echo "$(date +'%Y-%m-%d %H:%M:%S') - Restarting stale RTSP pipeline" >> $LOG_FILE
+                    killall -q rRTSPServer
+                    killall -q h264grabber h264grabber_l h264grabber_h
+                    sleep 1
+                    restart_rtsp
+                    COUNTER_STALL=0
+                    RTSP_IO=""
+                fi
+            else
+                COUNTER_STALL=0
+            fi
+        else
+            COUNTER_STALL=0
+        fi
+        LAST_RTSP_IO="$RTSP_IO"
         if [ $SOCKET -gt 0 ]; then
             if [ "$CPU_1_L" == "0.0" ] && [ "$CPU_2" == "0.0" ]; then
                 COUNTER_L=$((COUNTER_L+1))

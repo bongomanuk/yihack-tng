@@ -78,11 +78,14 @@ A complete firmware build still needs the original MStar `home` and `rootfs` par
 
 ### Binary patch
 
-The release asset contains the patched binaries only:
+The release asset contains the patched binaries and watchdog scripts:
 
 ```text
 h264grabber
 h264grabber2
+wd.sh
+service.sh
+system.sh
 ```
 
 On a compatible camera:
@@ -96,6 +99,15 @@ cp h264grabber2 /home/yi-hack/bin/h264grabber2
 chmod 755 /home/yi-hack/bin/h264grabber /home/yi-hack/bin/h264grabber2
 
 echo 4194304 > /proc/sys/fs/pipe-max-size
+
+# optional watchdog/startup scripts from the same release
+cp /home/yi-hack/script/wd.sh      /home/yi-hack/script/wd.sh.bak
+cp /home/yi-hack/script/service.sh /home/yi-hack/script/service.sh.bak
+cp /home/yi-hack/script/system.sh  /home/yi-hack/script/system.sh.bak
+cp wd.sh      /home/yi-hack/script/wd.sh
+cp service.sh /home/yi-hack/script/service.sh
+cp system.sh  /home/yi-hack/script/system.sh
+
 killall -q h264grabber h264grabber_h rRTSPServer
 ```
 
