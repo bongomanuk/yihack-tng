@@ -8,6 +8,8 @@ The camera hardware is still the camera hardware. This project does not replace 
 
 ## Why this fork exists
 
+This fork started for a simple reason: I got annoyed with weird dropouts and instability in Frigate. The camera would look fine in its own app, then Frigate would show gaps, restarts, or corrupt frames with no obvious cause.
+
 A camera that looks fine in a vendor app can still be a poor NVR source. The failure modes are usually not dramatic:
 
 - the RTSP watchdog treats a healthy but idle-ish stream as locked and restarts it;
