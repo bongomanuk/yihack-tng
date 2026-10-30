@@ -186,7 +186,7 @@ yihack-tng-<tag>-y30.tar.gz
 yihack-tng-<tag>-h307.tar.gz
 ```
 
-Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.5`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.5).
+Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.6`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.6).
 
 ## Builds and testing
 
