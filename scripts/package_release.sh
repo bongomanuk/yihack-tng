@@ -22,6 +22,7 @@ for CAMERA in "${!CAMERAS[@]}"; do
     cp "$ROOT_DIR/src/static/static/home/yi-hack/script/wd.sh" "$MODEL_DIR/"
     cp "$ROOT_DIR/src/static/static/home/yi-hack/script/service.sh" "$MODEL_DIR/"
     cp "$ROOT_DIR/src/static/static/home/yi-hack/script/system.sh" "$MODEL_DIR/"
+    cp "$ROOT_DIR/src/www/httpd/cgi-bin/load.sh" "$MODEL_DIR/"
     chmod 755 "$MODEL_DIR"/*
 
     printf '%s\n' "$CAMERA" > "$MODEL_DIR/MODEL"

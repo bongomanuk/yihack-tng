@@ -1,6 +1,7 @@
 #!/bin/sh
 
 CONF_FILE="etc/system.conf"
+CAMERA_CONF_FILE="etc/camera.conf"
 
 YI_PREFIX="/home/app"
 YI_HACK_PREFIX="/home/yi-hack"
@@ -13,6 +14,12 @@ get_config()
 {
     key=$1
     grep -w $1 $YI_HACK_PREFIX/$CONF_FILE | cut -d "=" -f2-
+}
+
+get_camera_config()
+{
+    key=$1
+    grep -w $1 $YI_HACK_PREFIX/$CAMERA_CONF_FILE | cut -d "=" -f2-
 }
 
 start_buffer()
@@ -55,6 +62,19 @@ export PATH=$PATH:/home/base/tools:/home/yi-hack/bin:/home/yi-hack/sbin:/tmp/sd/
 # Allow the H.264 grabber to use a multi-frame FIFO buffer
 [ -w /proc/sys/fs/pipe-max-size ] && echo 4194304 > /proc/sys/fs/pipe-max-size 2>/dev/null
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lib:/home/yi-hack/lib:/tmp/sd/yi-hack/lib
+
+case "$(get_camera_config ROTATE)" in
+    no) ipc_cmd -r off ;;
+    *) ipc_cmd -r on ;;
+esac
+case "$(get_camera_config IR)" in
+    no) ipc_cmd -i off ;;
+    *) ipc_cmd -i on ;;
+esac
+case "$(get_camera_config LED)" in
+    no) ipc_cmd -l off ;;
+    *) ipc_cmd -l on ;;
+esac
 
 ulimit -s 1024
 

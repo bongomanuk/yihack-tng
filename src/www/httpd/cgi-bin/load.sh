@@ -134,5 +134,5 @@ fi
 if [[ $(get_config ROTATE) == "no" ]] ; then
     ipc_cmd -r off
 else
-    ipc_cmd -r o
+    ipc_cmd -r on
 fi

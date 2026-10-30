@@ -109,6 +109,7 @@ rRTSPServer
 wd.sh
 service.sh
 system.sh
+load.sh
 MODEL
 README.txt
 ```
@@ -134,6 +135,8 @@ cp /home/yi-hack/script/system.sh  /home/yi-hack/script/system.sh.bak
 cp wd.sh      /home/yi-hack/script/wd.sh
 cp service.sh /home/yi-hack/script/service.sh
 cp system.sh  /home/yi-hack/script/system.sh
+cp /home/yi-hack/www/cgi-bin/load.sh /home/yi-hack/www/cgi-bin/load.sh.bak
+cp load.sh /home/yi-hack/www/cgi-bin/load.sh
 
 killall -q h264grabber h264grabber_h rRTSPServer
 ```
@@ -186,7 +189,7 @@ yihack-tng-<tag>-y30.tar.gz
 yihack-tng-<tag>-h307.tar.gz
 ```
 
-Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.8`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.8).
+Release assets are binary and script patches, not complete firmware images. This is intentional: the stock partitions cannot be redistributed with the source. The current release is [`v0.5.8-tng.9`](https://github.com/bongomanuk/yihack-tng/releases/tag/v0.5.8-tng.9).
 
 ## Builds and testing
 
