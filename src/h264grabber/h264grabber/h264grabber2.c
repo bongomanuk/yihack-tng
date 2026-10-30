@@ -33,6 +33,13 @@
 #include <sys/time.h>
 #include <getopt.h>
 #include <signal.h>
+
+#ifndef F_SETPIPE_SZ
+#define F_SETPIPE_SZ 1031
+#endif
+#ifndef F_GETPIPE_SZ
+#define F_GETPIPE_SZ 1032
+#endif
 #include <pthread.h>
 #include <errno.h>
 

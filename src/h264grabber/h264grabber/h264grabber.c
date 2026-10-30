@@ -32,6 +32,13 @@
 #include <sys/resource.h>
 #include <signal.h>
 
+#ifndef F_SETPIPE_SZ
+#define F_SETPIPE_SZ 1031
+#endif
+#ifndef F_GETPIPE_SZ
+#define F_GETPIPE_SZ 1032
+#endif
+
 #define GENERIC 0
 #define H305R 1
 
