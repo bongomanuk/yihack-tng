@@ -21,7 +21,7 @@ jobs:
           docker run --rm --entrypoint /bin/bash \
             -v "${GITHUB_WORKSPACE}:/build" -w /build \
             docker.io/borodiliz/yi-hack:latest \
-            -lc 'apt-get update && apt-get install -y libtool && ./scripts/compile.sh h264grabber && mkdir -p /tmp/tng-bin && cp build/home/yi-hack/bin/h264grabber build/home/yi-hack/bin/h264grabber2 /tmp/tng-bin/ && ./scripts/compile.sh rRTSPServer && cp /tmp/tng-bin/h264grabber /tmp/tng-bin/h264grabber2 build/home/yi-hack/bin/'
+            -lc 'sed -i "s|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g" /etc/apt/sources.list && apt-get update && apt-get install -y libtool && ./scripts/compile.sh h264grabber && mkdir -p /tmp/tng-bin && cp build/home/yi-hack/bin/h264grabber build/home/yi-hack/bin/h264grabber2 /tmp/tng-bin/ && ./scripts/compile.sh rRTSPServer && cp /tmp/tng-bin/h264grabber /tmp/tng-bin/h264grabber2 build/home/yi-hack/bin/'
 
       - name: Package per-model release assets
         run: ./scripts/package_release.sh "$GITHUB_REF_NAME"
